@@ -3,11 +3,13 @@
 
 #Load packages
 library('htmlwidgets')
+library(magicaxis)
 library(shiny)
 library(raster)
 library(rgdal)
 library(leaflet)
 library(ggplot2)
+options(scipen=10)
 
 #ggplot2 theme changes
 
@@ -26,6 +28,8 @@ matt_theme<- theme_update(axis.line = element_line(colour = "black"),
 
 load('Data/All.Dat.RData')
 
+areas[5,] <- c('D.C. National Mall',)
+
 #Setup shiny server
 shinyServer(function(input,output) {
 
@@ -38,20 +42,19 @@ shinyServer(function(input,output) {
     #Feed color ramp into Leaflet color ramp scheme. 
     pals.huc <- colorQuantile(palette=mapramp,domain=hucMine$VF_Depth,n=5,alpha=F)
     pals.county <- colorQuantile(palette=mapramp,domain=CountyCoal$VF_Depth,n=5,alpha=F)
-    leaflet() %>% addProviderTiles("Esri.WorldTopoMap") %>%
+    leaflet() %>% addProviderTiles("Esri.WorldTopoMap",group='Topo Map') %>%
+      addProviderTiles('MapQuestOpen.Aerial',group='Aerial Imagery') %>%
       #providerTileOptions(attribution='ESRI World Topo Map') %>%
       #   addRasterImage(r) %>% addRasterImage(r1) %>% addRasterImage(r2) %>% 
       #   addRasterImage(r3) %>% addRasterImage(r4) %>% 
       addPolygons(data=hucMine, weight=.5, smooth=0, stroke = T, fillOpacity = 0.6, 
                                          color=pals.huc(hucMine$VF_Depth),
                   popup= paste('Burial depth ',round(hucMine$VF_Depth,2), " m",sep=''), layerId=hucMine$HUC12,group='Watersheds') %>%
-      addPolygons(data=CountyCoal, weight=.9, smooth=2, fillOpacity=0.6,
-                  popup= paste(CountyCoal$NAME,"County burial depth =", round(CountyCoal$VF_Depth,2),''), 
-                  col=pals.county(CountyCoal$VF_Depth), layerId=CountyCoal$NAME,group='Counties') %>%
       addLegend(position='bottomright',values=hucMine$VF_Depth,pal=pals.huc,title='Rank Impact') %>%
       
       addLayersControl(
-        baseGroups=c('Watersheds','Counties'),
+        baseGroups = c('Topo Map','Aerial Imagery'),
+        overlayGroups=c('Watersheds'),
         options=layersControlOptions(collapsed=F,autoZIndex=T)
       )
 
@@ -77,11 +80,15 @@ id1<- reactive({validate(
     })
     if(id()$group == 'Watersheds') {
       output$barplot<- renderPlot({
+        par(cex=1.2)
         dat <-   hucMine$SUM[which(hucMine$HUC12 == as.character(id()$id))]*100
-        barplot(height= dat/areas$val, horiz=T, log= "x",xlab='Burial depth (m)',
-                las=1, col= "darkgrey",xlim=c(0.1,100000),
+        hgts <- dat/areas$val
+        hgts[hgts<0.1] <- 0.1
+        barplot(height= hgts, horiz=F, log= "y",ylab='Burial depth (m)',names.arg=areas$names,
+                las=1, col= "darkgrey",ylim=c(0.1,100000),yaxt='n',
                 main= bquote(paste(.(round(dat/(1000*1000*1000),3)),km^3," of Spoil Spread Over Various Areas")))
-                text(((dat/areas$val)/4)+3,y= (1:nrow(areas))*1.2, labels=(areas$names), pos=1, font= 2)
+        magaxis(2,majorn=3,minorn=10,cex.axis=1)
+                #text(((dat/areas$val)/4)+3,y= (1:nrow(areas))*1.2, labels=(areas$names), pos=1, font= 2)
       })
       output$secondbar <- renderPlot({
         dat <-   hucMine$SUM[which(hucMine$HUC12 == as.character(id()$id))]*100
