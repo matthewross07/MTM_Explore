@@ -1,14 +1,11 @@
-#Shiny Server
 
 
 #Load packages
-library('htmlwidgets')
 library(magicaxis)
 library(shiny)
-library(raster)
-library(rgdal)
 library(leaflet)
 library(ggplot2)
+library(sp)
 options(scipen=10)
 
 #ggplot2 theme changes
@@ -22,13 +19,13 @@ matt_theme<- theme_update(axis.line = element_line(colour = "black"),
                           panel.background = element_blank(),
                           axis.title=element_text(face='bold'),
                           text=element_text(family='sans',face='plain',colour='black',
-                                            size=14,hjust=.5,vjust=.5,angle=0,lineheight=0)
+                                            size=14,hjust=.5,vjust=.5,angle=0,lineheight=0,margin=margin(),debug=F)
 )
+
 
 
 load('Data/All.Dat.RData')
 
-areas[5,] <- c('D.C. National Mall',)
 
 #Setup shiny server
 shinyServer(function(input,output) {
@@ -62,8 +59,8 @@ shinyServer(function(input,output) {
   
   
   id<- reactive({    validate(
-    need(input$MapMine_shape_click != "", "Please select a watershed or county to view plots and data. App may take a few seconds
-       to load data after selecting data"))
+    need(input$MapMine_shape_click != "", "Please select a watershed or county from the map to the left to view plots and data. 
+App may take a few seconds to load data after selecting data (depending on internet connection speed)."))
     (input$MapMine_shape_click)
   })
 
@@ -139,15 +136,10 @@ cols <- c('grey1','darkred')
 #plot(c(0,100),c(0,100),col='white',axes=F,xlab='',ylab='')
 #text(x=50,y=50,labels='Maps not available for county data. Please 
 #     select "Plot View" to see summary data.',cex=1.2)
-
+?renderImage
 # Raster plots are all here ----------- #Rasters!!!!
 observe({
   output$rastplots <- renderImage({
-    if(id()$group != 'Watersheds'){
-      path <- normalizePath(file.path('www',
-                                      'CountyWarning.png'))
-      list(src=path)
-    }else{
     #Call slope images if ES == 1 (Sloep explore)
   if(input$Diff == T){
     path <- normalizePath(file.path('www',
@@ -182,7 +174,7 @@ observe({
     }# Closes else path for New elevation map
   }#Closes else path for elevation plot
   }#Closes if diff plot is called
-   }#Closes else if counties called
+    #Closes else if counties called
   },deleteFile=F) #Closes render image call
   
   if(input$ES == 1){
@@ -285,8 +277,6 @@ observe({
     }
   })
 })
-
-
 
 
 
