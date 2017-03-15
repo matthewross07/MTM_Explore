@@ -60,7 +60,7 @@ shinyServer(function(input, output) {
         alpha = F
       )
     leaflet() %>% addProviderTiles("Esri.WorldTopoMap", group = 'Topo Map') %>%
-      addProviderTiles('MapQuestOpen.Aerial', group = 'Aerial Imagery') %>%
+      addProviderTiles('Esri.WorldImagery', group = 'Aerial Imagery') %>%
       #providerTileOptions(attribution='ESRI World Topo Map') %>%
       #   addRasterImage(r) %>% addRasterImage(r1) %>% addRasterImage(r2) %>%
       #   addRasterImage(r3) %>% addRasterImage(r4) %>%
